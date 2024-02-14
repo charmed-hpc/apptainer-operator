@@ -1,0 +1,2 @@
+upgrade:
+  description: Upgrade apptainer to the latest release.
