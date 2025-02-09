@@ -1,15 +1,41 @@
-# Copyright 2024 Omnivector, LLC
+# Copyright 2025 Omnivector, LLC
 # See LICENSE file for licensing details.
+name: apptainer
+summary: |
+  Apptainer (formerly Singularity) simplifies the creation and execution of
+  containers, ensuring software components are encapsulated for portability and reproducibility.
+
+description: |
+  This subordinate charm installs the `apptainer` package when integrated
+  with a primary charm and removes the package from the system when the
+  integration between the primary and subordinate charm is removed.
+
+  Apptainer is installed by this charm from the upstream ppa
+  located at https://ppa.launchpadcontent.net/apptainer/ppa/ubuntu.
+
+links:
+  contact: https://matrix.to/#/#hpc:ubuntu.com
+
+  issues:
+  - https://github.com/charmed-hpc/apptainer-operator/issues
+
+  source:
+  - https://github.com/charmed-hpc/apptainer-operator
+
+assumes:
+  - juju
 
 type: charm
-bases:
-  - build-on:
-      - name: ubuntu
-        channel: "22.04"
-    run-on:
-      - name: ubuntu
-        channel: "22.04"
-        architectures: [amd64]
+base: ubuntu@24.04
+platforms:
+  amd64:
+
+subordinate: true
+
+requires:
+  juju-info:
+    interface: juju-info
+    scope: container
 
 parts:
   charm:
@@ -27,3 +53,7 @@ parts:
       echo $VERSION > $CRAFT_PART_INSTALL/version
     stage:
       - version
+
+actions:
+  upgrade:
+    description: Upgrade apptainer to the latest release.
