@@ -22,7 +22,7 @@ class ApptainerOperatorError(Exception):
 class Apptainer:
     """Facilitate apptainer package lifecycle ops."""
 
-    _package_name: str = "apptainer"
+    _package_name: str = "apptainer-suid"
 
     def install(self) -> None:
         """Install the apptainer package using lib apt."""
