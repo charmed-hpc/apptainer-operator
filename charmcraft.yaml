@@ -1,10 +1,21 @@
-# Copyright 2025 Omnivector, LLC
-# See LICENSE file for licensing details.
+# Copyright 2025 Vantage Compute Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 name: apptainer
 summary: |
-  Apptainer (formerly Singularity) simplifies the creation and execution of
+  Apptainer simplifies the creation and execution of
   containers, ensuring software components are encapsulated for portability and reproducibility.
-
 description: |
   This subordinate charm installs the `apptainer` package when integrated
   with a primary charm and removes the package from the system when the
@@ -12,13 +23,10 @@ description: |
 
   Apptainer is installed by this charm from the upstream ppa
   located at https://ppa.launchpadcontent.net/apptainer/ppa/ubuntu.
-
 links:
   contact: https://matrix.to/#/#hpc:ubuntu.com
-
   issues:
   - https://github.com/charmed-hpc/apptainer-operator/issues
-
   source:
   - https://github.com/charmed-hpc/apptainer-operator
 
@@ -26,20 +34,25 @@ assumes:
   - juju
 
 type: charm
-base: ubuntu@24.04
 platforms:
-  amd64:
+  ubuntu@24.04:amd64:
 
 subordinate: true
 
+provides:
+  oci-runtime:
+    interface: slurm-oci-runtime
 requires:
   juju-info:
     interface: juju-info
     scope: container
 
 parts:
-  charm:
-    build-packages: [git]
+  apptainer:
+    source: .
+    plugin: uv
+    build-snaps:
+      - astral-uv
   # Create a version file and pack it into the charm. This is dynamically generated
   # as part of the build process for a charm to ensure that the git revision of the
   # charm is always recorded in this version file.
@@ -48,7 +61,7 @@ parts:
     build-packages:
       - git
     override-build: |
-      VERSION=$(git -C $CRAFT_PART_SRC/../../charm/src describe --dirty --always)
+      VERSION=$(git -C $CRAFT_PART_SRC/../../apptainer/src describe --always)
       echo "Setting version to $VERSION"
       echo $VERSION > $CRAFT_PART_INSTALL/version
     stage:
