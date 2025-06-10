@@ -1,17 +1,33 @@
-#!/usr/bin/env python3
-"""Apptainer operations."""
+# Copyright 2025 Vantage Compute Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Manage `apptainer` installation on Juju units."""
+
 import logging
-import textwrap
-from typing import Optional
+import shutil
+import subprocess
 
 import charms.operator_libs_linux.v0.apt as apt
 import distro
 
-logger = logging.getLogger()
+from constants import APPTAINER_PACKAGES, APPTAINER_PPA_KEY, APPTAINER_PPA_URL
+
+_logger = logging.getLogger(__name__)
 
 
-class ApptainerOperatorError(Exception):
-    """Exception raised by apptainer operator."""
+class ApptainerOpsError(Exception):
+    """Exception raised when an `apptainer`-related operation on the unit has failed."""
 
     @property
     def message(self) -> str:
@@ -19,94 +35,93 @@ class ApptainerOperatorError(Exception):
         return self.args[0]
 
 
-class Apptainer:
-    """Facilitate apptainer package lifecycle ops."""
+def install() -> None:
+    """Install `apptainer`.
 
-    _package_name: str = "apptainer-suid"
+    Raises:
+        ApptainerOpsError: Raised if `apt` fails to install `apptainer` on the unit.
 
-    def install(self) -> None:
-        """Install the apptainer package using lib apt."""
-        logger.debug("Initializing apt to use apptainer ppa.")
-        apptainer = apt.DebianRepository(
+    Notes:
+        This function uses the `apptainer` packages hosted within the
+        upstream Apptainer PPA located at https://ppa.launchpadcontent.net/apptainer/ppa/ubuntu.
+    """
+    try:
+        _logger.info("adding `apptainer` ppa '%s' to /etc/apt/sources.list.d", APPTAINER_PPA_URL)
+        ppa = apt.DebianRepository(
             enabled=True,
             repotype="deb",
-            uri="https://ppa.launchpadcontent.net/apptainer/ppa/ubuntu/",
+            uri=APPTAINER_PPA_URL,
             release=distro.codename(),
             groups=["main"],
         )
-        apptainer.import_key(
-            textwrap.dedent(
-                """
-                -----BEGIN PGP PUBLIC KEY BLOCK-----
-                .
-                mQINBGPKLe0BEADKAHtUqLFryPhZ3m6uwuIQvwUr4US17QggRrOaS+jAb6e0P8kN
-                1clzJDuh3C6GnxEZKiTW3aZpcrW/n39qO263OMoUZhm1AliqiViJgthnqYGSbMgZ
-                /OB6ToQeHydZ+MgI/jpdAyYSI4Tf4SVPRbOafLvnUW5g/vJLMzgTAxyyWEjvH9Lx
-                yjOAXpxubz0Wu2xcoefN0mKCpaPsa9Y8xmog1lsylU+H/4BX6yAG7zt5hIvadc9Z
-                Y/vkDLh8kNaEtkXmmnTqGOsLgH6Nc5dnslR6Gwq966EC2Jbw0WbE50pi4g21s6Wi
-                wdU27/XprunXhhLdv6PYUaqdXxPRdBh+9u0LmNZsAyUxT6EgN05TAWFtaMOz7I3B
-                V6IpHuLqmIcnqulHrLi+0D/aiCv53WEZrBRmDBGX7p52lcyS+Q+LFf0+iYeY7pRG
-                fPXboBDr+6DelkYFIxam06purSGR3T9RJyrMP7qMWiInWxcxBoCMNfy8VudP0DAy
-                r2yXmHZbgSGjfJey03dnNwQH7huBcQ1VLEqtL+bjn3HubmYK87FltX7xomETFqcl
-                QmiT+WBttFRGtO6SFHHiBXOXUn0ihwabtr6gRKeJssCnFS3Y46RDv4z3Je92roLt
-                TPY8F9CgZrGiAoKq530BzEhJB6vfW3faRnLKdLePX/LToCP0g2t2jKwkzQARAQAB
-                tBtMYXVuY2hwYWQgUFBBIGZvciBBcHB0YWluZXKJAk4EEwEKADgWIQT2sPUZPU8z
-                Ae9JH/Cv42U0/GIYrgUCY8ot7QIbAwULCQgHAgYVCgkICwIEFgIDAQIeAQIXgAAK
-                CRCv42U0/GIYrut4EAC06vTJP2wgnh3BIZ3n2HKaSp4QsuYKS7F7UQJ5Yt+PpnKn
-                Pgjq3R4fYzOHyASv+TCj9QkMaeqWGWb6Zw0n47EtrCW9U5099Vdk2L42KjrqZLiW
-                qQ11hwWXUlc1ZYSOb0J4WTumgO6MrUCFkmNrbRE7yB42hxr/AU/XNM38YjN2NyOK
-                2gvORRKFwlLKrjE+70HmoCW09Yk64BZl1eCubM/qy5tKzSlC910uz87FvZmrGKKF
-                rXa2HGlO4O3Ty7bMSeRKl9m1OYuffAXNwp3/Vale9eDHOeq58nn7wU9pSosmqrXb
-                SLOwqQylc1YoLZMj+Xjx644xm5e2bhyD00WiHeqHmvlfQQWCWaPt4i4K0nJuYXwm
-                BCA6YUgSfDZJfg/FxJdU7ero5F9st2GK4WDBiz+1Eftw6Ik/WnMDSxXaZ8pwnd9N
-                +aAEc/QKP5e8kjxJMC9kfvXGUVzZuMbkUV+PycZhUWl4Aelua91lnTicVYfpuVCC
-                GqY0StWQeOxLJneI+1FqLFoBOZghzoTY5AYCp99RjKqQvY1vF4uErltmNeN1vtBm
-                CZyDOLQuQfqWWAunUwXVuxMJIENSVeLXunhu9ac24Vnf2rFqH4XVMDxiKc6+sv+v
-                fKpamSQOUSmfWJTnry/LiYbspi1OB2x3GQk3/4ANw0S4L83A6oXHUMg8x7/sZw==
-                =kwio
-                -----END PGP PUBLIC KEY BLOCK-----
-                """
-            )
-        )
+        ppa.import_key(APPTAINER_PPA_KEY)
         repositories = apt.RepositoryMapping()
-        repositories.add(apptainer)
+        repositories.add(ppa)
+        _logger.info(
+            "`apptainer` ppa '%s' successfully added to /etc/apt/sources.list.d", APPTAINER_PPA_URL
+        )
 
-        # Install the apptainer package.
+        apt.update()
+        _logger.info("installing packages `%s` using apt", APPTAINER_PACKAGES)
+        apt.add_package(APPTAINER_PACKAGES)
+        _logger.info("packages `%s` successfully installed on unit", APPTAINER_PACKAGES)
+    except (apt.GPGKeyError, apt.PackageNotFoundError, apt.PackageError) as e:
+        raise ApptainerOpsError(
+            f"failed to install apptainer packages `{APPTAINER_PACKAGES}`. reason: {e}"
+        )
+
+
+def upgrade() -> None:
+    """Upgrade `apptainer` to the latest available version.
+
+    Raises:
+        ApptainerOpsError: Raised if `apt` fails to upgrade the version of `apptainer` on the unit.
+    """
+    for name in APPTAINER_PACKAGES:
         try:
-            # Run `apt-get update`
-            apt.update()
-            apt.add_package(self._package_name)
-        except apt.PackageNotFoundError as e:
-            logger.error(f"{self._package_name} not found in package cache or on system")
-            raise ApptainerOperatorError(e)
-        except apt.PackageError as e:
-            logger.error(f"Could not install {self._package_name}. Reason: %s", e.message)
-            raise ApptainerOperatorError(e)
+            package = apt.DebianPackage.from_installed_package(name)
+            package.ensure(apt.PackageState.Latest)
+        except (apt.PackageNotFoundError, apt.PackageError) as e:
+            raise ApptainerOpsError(
+                (
+                    f"failed to upgrade packages `{APPTAINER_PACKAGES}` to the latest version. "
+                    + f"reason: {e}"
+                )
+            )
 
-    def uninstall(self) -> None:
-        """Uninstall the apptainer package using libapt."""
-        # Uninstall the apptainer package.
-        if apt.remove_package(self._package_name):
-            logger.info(f"{self._package_name} removed from system.")
-        else:
-            logger.error(f"{self._package_name} not found on system")
 
-    def upgrade_to_latest(self) -> None:
-        """Upgrade apptainer to latest."""
-        try:
-            apptainer = apt.DebianPackage.from_system(self._package_name)
-            apptainer.ensure(apt.PackageState.Latest)
-            logger.info("updated vim to version: %s", apptainer.fullversion)
-        except apt.PackageNotFoundError:
-            logger.error("a specified package not found in package cache or on system")
-        except apt.PackageError as e:
-            logger.error("could not install package. Reason: %s", e.message)
+def remove() -> None:
+    """Remove `apptainer`."""
+    try:
+        _logger.info("removing packages `%s` using apt", APPTAINER_PACKAGES)
+        apt.remove_package(APPTAINER_PACKAGES)
+        _logger.info("packages `%s` successfully removed from unit", APPTAINER_PACKAGES)
+    except apt.PackageNotFoundError as e:
+        raise ApptainerOpsError(
+            f"failed to remove apptainer packages `{APPTAINER_PACKAGES}`. reason: {e}"
+        )
 
-    def version(self) -> Optional[str]:
-        """Return the apptainer version."""
-        try:
-            apptainer = apt.DebianPackage.from_installed_package(self._package_name)
-        except apt.PackageNotFoundError:
-            logger.error(f"{self.package_name} not found on system")
-            return None
-        return apptainer.fullversion
+
+def version() -> str:
+    """Get the current version of `apptainer` installed on the unit.
+
+    Raises:
+        ApptainerOpsError: Raised if `apptainer` is not installed on unit.
+    """
+    try:
+        result = subprocess.check_output(["apptainer", "--version"], text=True)
+        return result.split()[-1]
+    except (FileNotFoundError, subprocess.CalledProcessError) as e:
+        raise ApptainerOpsError(
+            f"failed to get the version of `apptainer` installed. reason: {e.stderr}"
+        )
+
+
+def installed() -> bool:
+    """Check if `apptainer` is both installed on the unit and available on `$PATH`."""
+    try:
+        apt.DebianPackage.from_installed_package("apptainer")
+    except apt.PackageNotFoundError:
+        return False
+
+    return True if shutil.which("apptainer") else False
