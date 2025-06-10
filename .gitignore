@@ -8,3 +8,6 @@ build/
 .idea
 .vscode/
 version
+cover/
+requirements.txt
+*.secret
