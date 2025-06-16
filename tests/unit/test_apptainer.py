@@ -128,7 +128,10 @@ def test_version(mocker: MockerFixture) -> None:
     mock_run = mocker.patch.object(subprocess, "run")
     mock_run.side_effect = [
         subprocess.CompletedProcess([], returncode=0, stdout="apptainer version 1.3.4"),
-        subprocess.CalledProcessError(returncode=5, cmd=[], stderr="unknown flag: --version"),
+        FileNotFoundError("[Error 2] No such file or directory: 'apptainer'"),
+        subprocess.CalledProcessError(
+            returncode=5, cmd=["apptainer", "--version"], stderr="unknown flag: --version"
+        ),
     ]
 
     # Test `apptainer.version()` when `apptainer` is found on `$PATH`.
@@ -139,8 +142,20 @@ def test_version(mocker: MockerFixture) -> None:
         apptainer.version()
 
     assert exec_info.type == apptainer.ApptainerOpsError
-    assert exec_info.value.args[0] == (
-        "failed to get the version of `apptainer` installed. " + "reason: unknown flag: --version"
+    assert exec_info.value.message == (
+        "failed to get the version of `apptainer` installed. "
+        + "reason: [error 2] no such file or directory: 'apptainer'"
+    )
+
+    # Test `apptainer.version()` when apptainer is installed but command fails.
+    with pytest.raises(apptainer.ApptainerOpsError) as exec_info:
+        apptainer.version()
+
+    assert exec_info.type == apptainer.ApptainerOpsError
+    assert exec_info.value.message == (
+        "failed to get the version of `apptainer` installed. "
+        + "reason: command '['apptainer', '--version']' returned non-zero exit status 5. "
+        + "unknown flag: --version"
     )
 
 

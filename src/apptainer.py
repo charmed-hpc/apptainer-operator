@@ -17,6 +17,7 @@
 import logging
 import shutil
 import subprocess
+from string import Template
 
 import charms.operator_libs_linux.v0.apt as apt
 import distro
@@ -108,13 +109,14 @@ def version() -> str:
     Raises:
         ApptainerOpsError: Raised if `apptainer` is not installed on unit.
     """
+    error_msg = Template("failed to get the version of `apptainer` installed. reason: $reason")
     try:
         result = subprocess.check_output(["apptainer", "--version"], text=True)
         return result.split()[-1]
-    except (FileNotFoundError, subprocess.CalledProcessError) as e:
-        raise ApptainerOpsError(
-            f"failed to get the version of `apptainer` installed. reason: {e.stderr}"
-        )
+    except FileNotFoundError as e:
+        raise ApptainerOpsError(error_msg.substitute(reason=str(e).lower()))
+    except subprocess.CalledProcessError as e:
+        raise ApptainerOpsError(error_msg.substitute(reason=(str(e) + f" {e.stderr}").lower()))
 
 
 def installed() -> bool:
