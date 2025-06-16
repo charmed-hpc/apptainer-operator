@@ -24,12 +24,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Install `just`
-        run: sudo snap install just --classic
-      - name: Install `woke`
-        run: sudo snap install woke
       - name: Run inclusive naming checks
-        run: just woke
+        uses: get-woke/woke-action@v0
+        with:
+          fail-on-error: true
 
   lint:
     name: Lint checks
