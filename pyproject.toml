@@ -34,7 +34,7 @@ dev = [
     "pytest~=9.1",
     "pytest-mock ~= 3.15",
     "pytest-order ~= 1.5",
-    "jubilant ~= 1.11",
+    "jubilant ~= 1.12",
     "python-dotenv~=1.2",
 
     # Linting
