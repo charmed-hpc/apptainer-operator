@@ -73,7 +73,3 @@ parts:
       echo $VERSION > $CRAFT_PART_INSTALL/version
     stage:
       - version
-
-actions:
-  upgrade:
-    description: Upgrade apptainer to the latest release.
