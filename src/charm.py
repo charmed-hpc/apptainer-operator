@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2025 Vantage Compute Corporation
+# Copyright 2025-2026 Vantage Compute Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,18 +18,19 @@
 import logging
 
 import ops
+from charmed_hpc_libs.errors import AptError
 from charmed_hpc_libs.ops import StopCharm, leader, refresh
 from charmed_slurm_oci_runtime_interface import OCIRuntimeData, OCIRuntimeProvider
 from charmed_slurm_slurmctld_interface import SlurmctldConnectedEvent
 from slurmutils import OCIConfig
 
-import apptainer
+from apptainer import ApptainerManager
 from constants import OCI_RUNTIME_INTEGRATION_NAME
 
 
-def _apptainer_status_check(_: ops.CharmBase) -> ops.StatusBase:
+def _apptainer_status_check(charm: "ApptainerCharm") -> ops.StatusBase:
     """Check the state of the unit after a charm method has completed."""
-    if not apptainer.installed():
+    if not charm.apptainer.is_installed():
         return ops.BlockedStatus("Apptainer is not installed")
 
     return ops.ActiveStatus()
@@ -44,9 +45,10 @@ class ApptainerCharm(ops.CharmBase):
 
     def __init__(self, framework: ops.Framework) -> None:
         super().__init__(framework)
+
+        self.apptainer = ApptainerManager()
         framework.observe(self.on.install, self._on_install)
         framework.observe(self.on.stop, self._on_stop)
-        framework.observe(self.on.upgrade_action, self._on_upgrade)
 
         self._oci_runtime = OCIRuntimeProvider(self, OCI_RUNTIME_INTEGRATION_NAME)
         framework.observe(self._oci_runtime.on.slurmctld_connected, self._on_slurmctld_connected)
@@ -56,10 +58,10 @@ class ApptainerCharm(ops.CharmBase):
         """Handle when unit is installed onto a machine."""
         self.unit.status = ops.MaintenanceStatus("Installing Apptainer")
         try:
-            apptainer.install()
-            self.unit.set_workload_version(apptainer.version())
-        except apptainer.ApptainerOpsError as e:
-            logger.error(e)
+            self.apptainer.install()
+            self.unit.set_workload_version(self.apptainer.version())
+        except AptError as e:
+            logger.error(e.message)
             event.defer()
             raise StopCharm(
                 ops.BlockedStatus("Failed to install Apptainer. See `juju debug-log` for details.")
@@ -72,9 +74,9 @@ class ApptainerCharm(ops.CharmBase):
         """Handle when Juju starts teardown process of unit."""
         try:
             self.unit.status = ops.MaintenanceStatus("Removing Apptainer")
-            apptainer.remove()
+            self.apptainer.remove()
             self.unit.status = ops.MaintenanceStatus("Apptainer removed")
-        except apptainer.ApptainerOpsError as e:
+        except AptError as e:
             logger.error(e.message)
             raise StopCharm(
                 ops.BlockedStatus("Failed to remove Apptainer. See `juju debug-log` for details.")
@@ -94,18 +96,6 @@ class ApptainerCharm(ops.CharmBase):
         self._oci_runtime.set_oci_runtime_data(
             OCIRuntimeData(ociconfig=config), integration_id=event.relation.id
         )
-
-    @refresh
-    def _on_upgrade(self, _: ops.ActionEvent) -> None:
-        """Perform upgrade to latest operations."""
-        try:
-            apptainer.upgrade()
-            self.unit.set_workload_version(apptainer.version())
-        except apptainer.ApptainerOpsError as e:
-            logger.error(e.message)
-            raise StopCharm(
-                ops.BlockedStatus("Failed to upgrade Apptainer. See `juju debug-log` for details.")
-            )
 
 
 if __name__ == "__main__":  # pragma: nocover

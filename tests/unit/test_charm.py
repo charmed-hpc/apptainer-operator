@@ -1,4 +1,4 @@
-# Copyright 2025 Canonical Ltd.
+# Copyright 2025-2026 Canonical Ltd.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,29 +16,31 @@
 
 import ops
 import pytest
+from charmed_hpc_libs.errors import AptError
+from charmed_hpc_libs.ops import AptOpsManager
 from ops import testing
+from pytest_mock import MockerFixture
 from slurmutils import OCIConfig
 
-import apptainer
 from constants import OCI_RUNTIME_INTEGRATION_NAME
 
 
 @pytest.mark.parametrize(
     "mock_install,expected",
     (
-        pytest.param(lambda: None, ops.ActiveStatus(), id="success"),
+        pytest.param(None, ops.ActiveStatus(), id="success"),
         pytest.param(
-            lambda: (_ for _ in ()).throw(apptainer.ApptainerOpsError("install failed")),
+            AptError("install failed"),
             ops.BlockedStatus("Failed to install Apptainer. See `juju debug-log` for details."),
             id="fail",
         ),
     ),
 )
-def test_on_install(monkeypatch, mock_charm, mock_install, expected) -> None:
+def test_on_install(mock_charm, mocker: MockerFixture, mock_install, expected) -> None:
     """Test the `_on_install` event handler."""
-    monkeypatch.setattr(apptainer, "install", mock_install)
-    monkeypatch.setattr(apptainer, "installed", lambda: True)
-    monkeypatch.setattr(apptainer, "version", lambda: "1.3.4")
+    mocker.patch.object(AptOpsManager, "install", side_effect=mock_install)
+    mocker.patch.object(AptOpsManager, "is_installed", return_value=True)
+    mocker.patch.object(AptOpsManager, "version", return_value="1.3.4")
 
     state = mock_charm.run(mock_charm.on.install(), testing.State())
 
@@ -52,18 +54,18 @@ def test_on_install(monkeypatch, mock_charm, mock_install, expected) -> None:
 @pytest.mark.parametrize(
     "mock_remove,expected",
     (
-        pytest.param(lambda: None, ops.BlockedStatus("Apptainer is not installed"), id="success"),
+        pytest.param(None, ops.BlockedStatus("Apptainer is not installed"), id="success"),
         pytest.param(
-            lambda: (_ for _ in ()).throw(apptainer.ApptainerOpsError("install failed")),
+            AptError("remove failed"),
             ops.BlockedStatus("Failed to remove Apptainer. See `juju debug-log` for details."),
             id="fail",
         ),
     ),
 )
-def test_on_stop(monkeypatch, mock_charm, mock_remove, expected) -> None:
+def test_on_stop(mock_charm, mocker: MockerFixture, mock_remove, expected) -> None:
     """Test the `_on_stop` event handler."""
-    monkeypatch.setattr(apptainer, "remove", mock_remove)
-    monkeypatch.setattr(apptainer, "installed", lambda: False)
+    mocker.patch.object(AptOpsManager, "remove", side_effect=mock_remove)
+    mocker.patch.object(AptOpsManager, "is_installed", return_value=False)
 
     state = mock_charm.run(mock_charm.on.stop(), testing.State())
 
@@ -97,35 +99,3 @@ def test_on_slurmctld_connected(mock_charm, mock_ociconfig, leader) -> None:
     else:
         # Verify that non-leader has not set any `oci.conf` configuration data.
         assert integration.local_app_data == {}
-
-
-@pytest.mark.parametrize(
-    "mock_upgrade,mock_version,expected_status,expected_version",
-    (
-        pytest.param(lambda: None, lambda: "1.4.0", ops.ActiveStatus(), "1.4.0", id="success"),
-        pytest.param(
-            lambda: (_ for _ in ()).throw(apptainer.ApptainerOpsError("upgrade failed")),
-            lambda: "",
-            ops.BlockedStatus("Failed to upgrade Apptainer. See `juju debug-log` for details."),
-            "",
-            id="fail",
-        ),
-    ),
-)
-def test_on_upgrade(
-    monkeypatch,
-    mock_charm,
-    mock_upgrade,
-    mock_version,
-    expected_status,
-    expected_version,
-) -> None:
-    """Test the `_on_upgrade` action event handler."""
-    monkeypatch.setattr(apptainer, "upgrade", mock_upgrade)
-    monkeypatch.setattr(apptainer, "version", mock_version)
-    monkeypatch.setattr(apptainer, "installed", lambda: True)
-
-    state = mock_charm.run(mock_charm.on.action("upgrade"), testing.State())
-
-    assert state.unit_status == expected_status
-    assert state.workload_version == expected_version

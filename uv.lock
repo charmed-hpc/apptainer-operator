@@ -14,8 +14,6 @@ dependencies = [
     { name = "charmed-hpc-libs" },
     { name = "charmed-slurm-oci-runtime-interface" },
     { name = "charmed-slurm-slurmctld-interface" },
-    { name = "charmlibs-apt" },
-    { name = "distro" },
     { name = "ops" },
     { name = "slurmutils" },
 ]
@@ -36,21 +34,19 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "charmed-hpc-libs", specifier = "~=0.1" },
+    { name = "charmed-hpc-libs", specifier = "~=0.5" },
     { name = "charmed-slurm-oci-runtime-interface", specifier = "~=0.1" },
     { name = "charmed-slurm-slurmctld-interface", specifier = "~=0.1" },
-    { name = "charmlibs-apt", specifier = "~=1.0" },
     { name = "codespell", marker = "extra == 'dev'" },
-    { name = "coverage", extras = ["toml"], marker = "extra == 'dev'", specifier = "~=7.8" },
-    { name = "distro", specifier = "~=1.9" },
-    { name = "jubilant", marker = "extra == 'dev'", specifier = "~=1.0" },
-    { name = "ops", specifier = "~=3.0" },
-    { name = "ops", extras = ["testing"], marker = "extra == 'dev'", specifier = "~=3.0" },
+    { name = "coverage", extras = ["toml"], marker = "extra == 'dev'", specifier = "~=7.15" },
+    { name = "jubilant", marker = "extra == 'dev'", specifier = "~=1.12" },
+    { name = "ops", specifier = "~=3.8" },
+    { name = "ops", extras = ["testing"], marker = "extra == 'dev'", specifier = "~=3.8" },
     { name = "pyright", marker = "extra == 'dev'" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = "~=9.0" },
-    { name = "pytest-mock", marker = "extra == 'dev'", specifier = "~=3.14" },
-    { name = "pytest-order", marker = "extra == 'dev'", specifier = "~=1.3" },
-    { name = "python-dotenv", marker = "extra == 'dev'", specifier = "~=1.0" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = "~=9.1" },
+    { name = "pytest-mock", marker = "extra == 'dev'", specifier = "~=3.15" },
+    { name = "pytest-order", marker = "extra == 'dev'", specifier = "~=1.5" },
+    { name = "python-dotenv", marker = "extra == 'dev'", specifier = "~=1.2" },
     { name = "ruff", marker = "extra == 'dev'" },
     { name = "slurmutils", specifier = ">=1.3.0,<2.0" },
 ]
@@ -67,11 +63,11 @@ wheels = [
 
 [[package]]
 name = "charmed-hpc-libs"
-version = "0.4.0"
+version = "0.5.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/03/b8/05960833d8ec2cd66ad1c4662dd863dbef9210974cb86da441dff0a5fb26/charmed_hpc_libs-0.4.0.tar.gz", hash = "sha256:05c5b6252570ddd3e31f714ce846dafb1f6615ccf396b00ce913b657d4b97a62", size = 53607, upload-time = "2026-07-20T15:08:29.677Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/03/7a/ac2abd0d2c0e17013ea04d50bb69951d92c6ebc5b2e9d9e26834c5a37c8b/charmed_hpc_libs-0.5.0.tar.gz", hash = "sha256:dd090e599badcd195b5546823a433d5effb5c96e01db353461310de13b5b88a8", size = 53736, upload-time = "2026-07-22T15:47:01.92Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/6b/00/c519084e0fb8fc005b28fd04e2b11b7c814ef55a0ab055669e5c70db1451/charmed_hpc_libs-0.4.0-py3-none-any.whl", hash = "sha256:920a1662e4815d109d79432ae94c4e2fe2efa3fb8c0125351353ac6535a99b74", size = 31530, upload-time = "2026-07-20T15:08:28.626Z" },
+    { url = "https://files.pythonhosted.org/packages/80/74/857e3b470a2523dd3f0ee57ab48ce365a6b31d891840bbfc82142186ac42/charmed_hpc_libs-0.5.0-py3-none-any.whl", hash = "sha256:eb8cb147a5caaa5cab24f53c9ecea76217cac2e84e0a853d21b4f4df9d394c3b", size = 31514, upload-time = "2026-07-22T15:47:00.861Z" },
 ]
 
 [package.optional-dependencies]
@@ -110,18 +106,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/36/ce/23c496b7b54596444a842764b7cd16f3bc2a73eb0fe2db2198961a5d4f1e/charmed_slurm_slurmctld_interface-0.1.0.tar.gz", hash = "sha256:c1d215c410eeac5fa2859f0a7f76aa59806ef951a3fbe03c892b5b8cabb0c8d7", size = 11318, upload-time = "2026-04-10T20:53:42.509Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/83/a0/32c3ea40ad6c1b5237750e4268a310f67d4b0a425e23fec0c870af29ef5c/charmed_slurm_slurmctld_interface-0.1.0-py3-none-any.whl", hash = "sha256:1d9d35b9e04938311d932e1f4c3446f1dd890deb2c0ea761251e0d38f5f819c3", size = 12772, upload-time = "2026-04-10T20:53:41.372Z" },
-]
-
-[[package]]
-name = "charmlibs-apt"
-version = "1.0.0.post1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "opentelemetry-api" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/77/79/2dfe3a6931c06081492de8ff97043a337339896401e910f46d4613d0a7d0/charmlibs_apt-1.0.0.post1.tar.gz", hash = "sha256:d332959b633f9aa1a3b7c5ec274ff2ef7a5d4482de4ce4d96c36e1dd1b97625d", size = 32034, upload-time = "2026-06-16T05:39:50.799Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/12/e9/da1c8b57de65484ae47b0808ce5c0b2fcf947ebbcdf7abccd2f898411e97/charmlibs_apt-1.0.0.post1-py3-none-any.whl", hash = "sha256:5682758b9de1273d59e7a94f8e861d57ccd4360c510d598610a69b758e5076d1", size = 19282, upload-time = "2026-06-16T05:39:49.474Z" },
 ]
 
 [[package]]
@@ -212,15 +196,6 @@ wheels = [
 ]
 
 [[package]]
-name = "distro"
-version = "1.9.0"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/fc/f8/98eea607f65de6527f8a2e8885fc8015d3e6f5775df186e443e0964a11c3/distro-1.9.0.tar.gz", hash = "sha256:2fa77c6fd8940f116ee1d6b94a2f90b13b5ea8d019b98bc8bafdcabcdd9bdbed", size = 60722, upload-time = "2023-12-24T09:54:32.31Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/12/b3/231ffd4ab1fc9d679809f356cebee130ac7daa00d6d6f3206dd4fd137e9e/distro-1.9.0-py3-none-any.whl", hash = "sha256:7bffd925d65168f85027d8da9af6bddab658135b840670a223589bc0c8ef02b2", size = 20277, upload-time = "2023-12-24T09:54:30.421Z" },
-]
-
-[[package]]
 name = "iniconfig"
 version = "2.3.0"
 source = { registry = "https://pypi.org/simple" }
@@ -258,14 +233,14 @@ wheels = [
 
 [[package]]
 name = "jubilant"
-version = "1.11.0"
+version = "1.12.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pyyaml" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/1c/0a/4112c6a16440efa7047b58ea7cd3751a75ef4b73e75fa4b4b4aadf7cbf1c/jubilant-1.11.0.tar.gz", hash = "sha256:69d13d2a0c9604a146fb7172732b9344f7aa14a35cdc29a37189831a724dc80a", size = 34642, upload-time = "2026-06-29T04:23:29.965Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/27/c3/13eb3579d021346c95d0622ebbcce7d3326ed6412d0b51d4d3df2461443d/jubilant-1.12.0.tar.gz", hash = "sha256:7d796d5c19f0b74a041f50aa68919731c7c83da4fb8a8258c8861524532b6997", size = 35291, upload-time = "2026-07-30T03:45:32.974Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/63/72/8ba367bc63f03b9f0a31c7975fec8e7f3c9da3516a8d1db668164fc1801b/jubilant-1.11.0-py3-none-any.whl", hash = "sha256:900427d616c75f1cfb6ee11212fefe9c7877111209630a87b2b2556a37d626e7", size = 36640, upload-time = "2026-06-29T04:23:28.667Z" },
+    { url = "https://files.pythonhosted.org/packages/4e/17/0569153f6aca13716e019243d01895f26061233bae7e21a459cc128e7120/jubilant-1.12.0-py3-none-any.whl", hash = "sha256:fa64922156d861149666c8ce08cb93b1fd787172fdd12175a4d0563955a67544", size = 37077, upload-time = "2026-07-30T03:45:31.764Z" },
 ]
 
 [[package]]
