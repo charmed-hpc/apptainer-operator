@@ -1,4 +1,4 @@
-# Copyright 2025 Canonical Ltd.
+# Copyright 2025-2026 Canonical Ltd.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,16 +14,10 @@
 
 """Configure unit tests for the `apptainer` charm."""
 
-from importlib import reload
-from typing import Any
-
 import pytest
 from ops import testing
-from pytest_mock import MockerFixture
 from slurmutils import OCIConfig
 
-import apptainer
-import constants
 from charm import ApptainerCharm
 
 
@@ -45,21 +39,3 @@ def mock_ociconfig() -> OCIConfig:
     config.run_time_delete = "kill -s SIGKILL %p"
 
     return config
-
-
-@pytest.fixture(scope="function")
-def mock_is_container(request, mocker: MockerFixture) -> None:
-    mocker.patch("charmed_hpc_libs.ops.is_container", request.param)
-
-    # The `apptainer` and `constants` modules must be reloaded because the value of
-    # `APPTAINER_PACKAGES` constant is calculated when the unit tests are collected by
-    # `pytest` before the patch to the `is_container` function is applied.
-    # Reloading the modules within the test forces the `APPTAINER_PACKAGES` constant to be
-    # re-calculated using the mocked return value of `is_container`.
-    reload(constants)
-    reload(apptainer)
-
-
-@pytest.fixture(scope="function")
-def expected(request) -> Any:
-    return request.param
