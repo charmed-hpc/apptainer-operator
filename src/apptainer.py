@@ -14,11 +14,47 @@
 
 """Manage and operate ``apptainer``."""
 
-from charmed_hpc_libs.ops import AptLifecycleManager
+from pathlib import Path
+
+from charmed_hpc_libs.ops import AptLifecycleManager, systemctl
+
+_APPARMOR_PROFILE_PATH = Path("/etc/apparmor.d/apptainer")
+_APPARMOR_PROFILE = """\
+abi <abi/4.0>,
+include <tunables/global>
+profile apptainer /usr/lib/@{multiarch}/apptainer/bin/starter flags=(unconfined) {
+  userns,
+}
+"""
 
 
 class ApptainerManager(AptLifecycleManager):
     """Manage the ``apptainer`` installation of a machine."""
 
     def __init__(self) -> None:
-        super().__init__("apptainer")
+        super().__init__("apptainer", additional_packages=["fuse2fs", "squashfuse", "gocryptfs"])
+
+        # Remove bindings from `AptLifecycleManager` and use overrides below.
+        del self.install
+        del self.remove
+
+    def install(self, *, update: bool = True) -> None:
+        """Install ``apptainer`` and apply ``apptainer``-specific post-install configuration.
+
+        Args:
+            update: If `True`, update the `apt` cache before installing packages.
+        """
+        self._ops_manager.install(update=update)
+        # FIXME: The `apptainer` package from Ubuntu Universe currently does not ship the required
+        #   apparmor profile to enable `apptainer` to create unprivileged user namespaces when
+        #   running containers. Apply our own custom profile here so that non-root users can
+        #   successfully run containers while the fix for the package is worked on upstream
+        #   in Debian.
+        _APPARMOR_PROFILE_PATH.write_text(_APPARMOR_PROFILE)
+        systemctl("reload", "apparmor")
+
+    def remove(self, *, purge: bool = True) -> None:
+        """Remove ``apptainer`` and clean up custom apparmor profile."""
+        self._ops_manager.remove(purge=purge)
+        _APPARMOR_PROFILE_PATH.unlink(missing_ok=True)
+        systemctl("reload", "apparmor")
