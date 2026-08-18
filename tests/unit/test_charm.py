@@ -41,6 +41,9 @@ def test_on_install(mock_charm, mocker: MockerFixture, mock_install, expected) -
     mocker.patch.object(AptOpsManager, "install", side_effect=mock_install)
     mocker.patch.object(AptOpsManager, "is_installed", return_value=True)
     mocker.patch.object(AptOpsManager, "version", return_value="1.3.4")
+    # Mock AppArmor side effects introduced by `ApptainerManager.install`.
+    mocker.patch("apptainer._APPARMOR_PROFILE_PATH")
+    mocker.patch("apptainer.systemctl")
 
     state = mock_charm.run(mock_charm.on.install(), testing.State())
 
@@ -66,6 +69,9 @@ def test_on_stop(mock_charm, mocker: MockerFixture, mock_remove, expected) -> No
     """Test the `_on_stop` event handler."""
     mocker.patch.object(AptOpsManager, "remove", side_effect=mock_remove)
     mocker.patch.object(AptOpsManager, "is_installed", return_value=False)
+    # Mock AppArmor side effects introduced by `ApptainerManager.remove`.
+    mocker.patch("apptainer._APPARMOR_PROFILE_PATH")
+    mocker.patch("apptainer.systemctl")
 
     state = mock_charm.run(mock_charm.on.stop(), testing.State())
 
