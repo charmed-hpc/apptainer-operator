@@ -13,6 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Manage charm test plans with gherkinator
+mod gherkinator "tests/integration/"
+
 uv := require("uv")
 
 project_dir := justfile_directory()
@@ -29,59 +32,24 @@ uv_run := "uv run --frozen --extra dev"
 default:
     @just help
 
-# Regenerate uv.lock
-[group("dev")]
-lock:
-    uv lock
-
-# Create a development environment
-[group("dev")]
-env: lock
-    uv sync --extra dev
-
-# Upgrade uv.lock with the latest dependencies
-[group("dev")]
-upgrade:
-    uv lock --upgrade
-
-# Generate publishing token for Charmhub
-[group("dev")]
-generate-token:
-    charmcraft login \
-        --export=.charmhub.secret \
-        --charm=apptainer \
-        --permission=package-manage-metadata \
-        --permission=package-manage-releases \
-        --permission=package-manage-revisions \
-        --permission=package-view-metadata \
-        --permission=package-view-releases \
-        --permission=package-view-revisions \
-        --ttl=31536000  # 365 days
+# Prepare the local environment
+setup: env
 
 # Apply coding style standards to code
-[group("lint")]
 fmt: lock
     {{uv_run}} ruff format {{src_dir}} {{tests_dir}}
     {{uv_run}} ruff check --fix {{src_dir}} {{tests_dir}}
 
 # Check code against coding style standards
-[group("lint")]
 lint: lock
     {{uv_run}} codespell {{src_dir}}
     {{uv_run}} ruff check {{src_dir}}
 
 # Run static type checker on code
-[group("lint")]
 typecheck: lock
     {{uv_run}} pyright
 
-# Run inclusive naming check on code
-[group("lint")]
-woke:
-    woke {{src_dir}} {{tests_dir}}
-
 # Run unit tests
-[group("test")]
 unit *args: lock
     {{uv_run}} coverage run \
         --source {{src_dir}} \
@@ -92,7 +60,6 @@ unit *args: lock
     {{uv_run}} coverage xml -o {{project_dir / "cover" / "coverage.xml"}}
 
 # Run integration tests
-[group("test")]
 integration *args: lock
     #!/usr/bin/env bash
     set -euxo pipefail
@@ -107,6 +74,65 @@ integration *args: lock
         --log-cli-level=INFO \
         {{args}} \
         {{tests_dir / "integration"}}
+
+# Run tests for specified targets, or all tests if none specified
+test *targets:
+    #!/usr/bin/env bash
+    if [ "{{targets}}" = "" ]; then
+        just test-all
+        exit 0
+    fi
+
+    for target in {{targets}}; do
+        if just --show $target > /dev/null 2>&1; then
+            echo "Running $target tests..."
+            just $target
+        else
+            echo "$target tests not found, skipping."
+            exit 1
+        fi
+    done
+
+# Run all test suites
+test-all: unit integration
+
+# Clean project directory
+clean:
+    rm -rf {{project_dir / ".coverage"}}
+    rm -rf {{project_dir / "cover"}}
+    rm -rf {{project_dir / ".pytest_cache"}}
+    rm -rf {{project_dir / ".ruff_cache"}}
+    find {{project_dir}} -name __pycache__ -type d | xargs rm -rf
+    rm -f {{project_dir / "apptainer.charm"}}
+    rm -f {{project_dir / "apptainer_"}}*.charm
+
+# Apply static checks
+check: fmt lint typecheck
+
+# Regenerate uv.lock
+lock:
+    uv lock
+
+# Create a development environment
+env: lock
+    uv sync --extra dev
+
+# Upgrade uv.lock with the latest dependencies
+upgrade:
+    uv lock --upgrade
+
+# Generate publishing token for Charmhub
+generate-token:
+    charmcraft login \
+        --export=.charmhub.secret \
+        --charm=apptainer \
+        --permission=package-manage-metadata \
+        --permission=package-manage-releases \
+        --permission=package-manage-revisions \
+        --permission=package-view-metadata \
+        --permission=package-view-releases \
+        --permission=package-view-revisions \
+        --ttl=31536000  # 365 days
 
 # Show available recipes
 help:
