@@ -14,6 +14,9 @@
 
 """Unit tests for the `apptainer` manager."""
 
+from pathlib import Path
+
+import pytest
 from charmed_hpc_libs.ops import AptOpsManager
 from pytest_mock import MockerFixture
 
@@ -46,3 +49,26 @@ class TestApptainerManager:
         mock_remove.assert_called_once_with(purge=True)
         mock_path.unlink.assert_called_once_with(missing_ok=True)
         mock_systemctl.assert_called_once_with("reload", "apparmor")
+
+    @pytest.mark.parametrize(
+        "which_result,expected",
+        (
+            pytest.param("/usr/bin/apptainer", Path("/usr/bin/apptainer"), id="found"),
+            pytest.param(None, None, id="not_found"),
+        ),
+    )
+    def test_executable_path(
+        self, mocker: MockerFixture, which_result: str | None, expected: Path | None
+    ) -> None:
+        """Test the ``executable_path`` property."""
+        mock_which = mocker.patch("apptainer.shutil.which", return_value=which_result)
+
+        if expected is None:
+            with pytest.raises(
+                FileNotFoundError, match="`apptainer` executable not found on PATH"
+            ):
+                ApptainerManager().executable_path
+        else:
+            assert ApptainerManager().executable_path == expected
+
+        mock_which.assert_called_once_with("apptainer")

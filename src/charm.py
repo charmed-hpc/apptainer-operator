@@ -22,7 +22,6 @@ from charmed_hpc_libs.errors import AptError
 from charmed_hpc_libs.ops import StopCharm, leader, refresh
 from charmed_slurm_oci_runtime_interface import OCIRuntimeData, OCIRuntimeProvider
 from charmed_slurm_slurmctld_interface import SlurmctldConnectedEvent
-from slurmutils import OCIConfig
 
 from apptainer import ApptainerManager
 from constants import OCI_RUNTIME_INTEGRATION_NAME
@@ -83,19 +82,25 @@ class ApptainerCharm(ops.CharmBase):
             )
 
     @leader
+    @refresh
     def _on_slurmctld_connected(self, event: SlurmctldConnectedEvent) -> None:
         """Handle when the Slurm controller `slurmctld` is connected to application."""
-        config = OCIConfig()
-        config.ignore_file_config_json = True
-        config.env_exclude = "^(SLURM_CONF|SLURM_CONF_SERVER)="
-        config.run_time_env_exclude = "^(SLURM_CONF|SLURM_CONF_SERVER)="
-        config.run_time_run = "apptainer exec --userns %r %@"
-        config.run_time_kill = "kill -s SIGTERM %p"
-        config.run_time_delete = "kill -s SIGKILL %p"
-
-        self._oci_runtime.set_oci_runtime_data(
-            OCIRuntimeData(ociconfig=config), integration_id=event.relation.id
-        )
+        try:
+            self._oci_runtime.set_oci_runtime_data(
+                OCIRuntimeData(
+                    type="apptainer",
+                    executable_path=str(self.apptainer.executable_path),
+                ),
+                integration_id=event.relation.id,
+            )
+        except FileNotFoundError as e:
+            logger.exception(e)
+            event.defer()
+            raise StopCharm(
+                ops.BlockedStatus(
+                    "Failed to provide OCI runtime data. See `juju debug-log` for details"
+                )
+            )
 
 
 if __name__ == "__main__":  # pragma: nocover
