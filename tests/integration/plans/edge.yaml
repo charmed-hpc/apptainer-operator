@@ -1,0 +1,29 @@
+---
+feature: "Functional edge tests"
+type: functional
+status: implemented
+risk: edge
+description: >
+  Functional tests for the edge risk level
+scenarios:
+  - |-
+    Deploy the apptainer charm with a principal charm
+
+    Given I pack a 'apptainer' charm
+    And I add model 'apptainer'
+    And I switch to model 'apptainer'
+    And I deploy 'apptainer' from a local charm located at 'apptainer.charm' on base 'ubuntu@26.04'
+    And I deploy 'ubuntu' on base 'ubuntu@26.04' from channel 'latest/stable'
+    And I integrate 'apptainer:juju-info' with 'ubuntu:juju-info'
+    Then all agents are 'idle' in model 'apptainer'
+    And the workload status for app 'apptainer' is 'active'
+
+  - |-
+    Execute commands in an apptainer container
+
+    Given 'apptainer' is deployed
+    When I ssh into unit 'apptainer/0' and I execute 'apptainer pull ubuntu.sif docker://ubuntu:jammy'
+    And I ssh into unit 'apptainer/0' and I execute 'apptainer exec ubuntu.sif cat /etc/os-release'
+    And I ssh into unit 'apptainer/0' and I execute 'apptainer --silent exec docker://alpine:latest cat /etc/os-release'
+    Then the ssh output field 'ID' should be 'alpine'
+    And the ssh output field 'VERSION_CODENAME' should be 'jammy'
