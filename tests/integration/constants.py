@@ -1,4 +1,4 @@
-# Copyright 2025 Canonical Ltd.
+# Copyright 2025-2026 Canonical Ltd.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,6 +14,7 @@
 
 """Constants used within the `apptainer` charm integration tests."""
 
-DEFAULT_APPTAINER_CHARM_CHANNEL = "latest/edge"
-APPTAINER_APP_NAME = "apptainer"
-UBUNTU_APP_NAME = "ubuntu"
+from pathlib import Path
+
+FEATURE_DIR = Path(__file__).parent.resolve() / "features"
+EDGE_FEATURES = [str(feature) for feature in FEATURE_DIR.glob("*edge*")]
