@@ -14,6 +14,7 @@
 
 """Manage and operate ``apptainer``."""
 
+import shutil
 from pathlib import Path
 
 from charmed_hpc_libs.ops import AptLifecycleManager, systemctl
@@ -37,6 +38,19 @@ class ApptainerManager(AptLifecycleManager):
         # Remove bindings from `AptLifecycleManager` and use overrides below.
         del self.install
         del self.remove
+
+    @property
+    def executable_path(self) -> Path:
+        """Path to the ``apptainer`` executable on this machine.
+
+        Raises:
+            FileNotFoundError: If ``apptainer`` cannot be found on ``PATH``.
+        """
+        path = shutil.which("apptainer")
+        if path is None:
+            raise FileNotFoundError("`apptainer` executable not found on PATH")
+
+        return Path(path)
 
     def install(self, *, update: bool = True) -> None:
         """Install ``apptainer`` and apply ``apptainer``-specific post-install configuration.
