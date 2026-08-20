@@ -16,7 +16,6 @@
 
 import pytest
 from ops import testing
-from slurmutils import OCIConfig
 
 from charm import ApptainerCharm
 
@@ -25,17 +24,3 @@ from charm import ApptainerCharm
 def mock_charm() -> testing.Context[ApptainerCharm]:
     """Mock `ApptainerCharm`."""
     return testing.Context(ApptainerCharm)
-
-
-@pytest.fixture(scope="session")
-def mock_ociconfig() -> OCIConfig:
-    """Mock `oci.conf` configuration data."""
-    config = OCIConfig()
-    config.ignore_file_config_json = True
-    config.env_exclude = "^(SLURM_CONF|SLURM_CONF_SERVER)="
-    config.run_time_env_exclude = "^(SLURM_CONF|SLURM_CONF_SERVER)="
-    config.run_time_run = "apptainer exec --userns %r %@"
-    config.run_time_kill = "kill -s SIGTERM %p"
-    config.run_time_delete = "kill -s SIGKILL %p"
-
-    return config

@@ -20,8 +20,8 @@ from charmed_hpc_libs.errors import AptError
 from charmed_hpc_libs.ops import AptOpsManager
 from ops import testing
 from pytest_mock import MockerFixture
-from slurmutils import OCIConfig
 
+from apptainer import ApptainerManager
 from constants import OCI_RUNTIME_INTEGRATION_NAME
 
 
@@ -79,10 +79,59 @@ def test_on_stop(mock_charm, mocker: MockerFixture, mock_remove, expected) -> No
 
 
 @pytest.mark.parametrize(
-    "leader", (pytest.param(True, id="unit_leader"), pytest.param(False, id="not_unit_leader"))
+    "leader,executable_path,expected_status,expected_app_data,expected_deferred",
+    (
+        pytest.param(
+            True,
+            "/usr/bin/apptainer",
+            ops.ActiveStatus(),
+            {"type": '"apptainer"', "executable_path": '"/usr/bin/apptainer"'},
+            0,
+            id="leader_success",
+        ),
+        pytest.param(
+            False,
+            "/usr/bin/apptainer",
+            ops.UnknownStatus(),
+            {},
+            0,
+            id="non_leader",
+        ),
+        pytest.param(
+            True,
+            FileNotFoundError("apptainer executable not found on PATH"),
+            ops.BlockedStatus(
+                "Failed to provide OCI runtime data. See `juju debug-log` for details"
+            ),
+            {},
+            1,
+            id="leader_executable_not_found",
+        ),
+    ),
 )
-def test_on_slurmctld_connected(mock_charm, mock_ociconfig, leader) -> None:
+def test_on_slurmctld_connected(
+    mock_charm,
+    mocker: MockerFixture,
+    leader,
+    executable_path,
+    expected_status,
+    expected_app_data,
+    expected_deferred,
+) -> None:
     """Test the `_on_slurmctld_connected` event handler."""
+    if isinstance(executable_path, FileNotFoundError):
+        mocker.patch.object(
+            ApptainerManager,
+            "executable_path",
+            new_callable=mocker.PropertyMock,
+            side_effect=executable_path,
+        )
+    else:
+        mocker.patch.object(
+            ApptainerManager, "executable_path", new_callable=lambda: executable_path
+        )
+    mocker.patch.object(AptOpsManager, "is_installed", return_value=True)
+
     oci_runtime_integration_id = 25
     oci_runtime_integration = testing.Relation(
         endpoint=OCI_RUNTIME_INTEGRATION_NAME,
@@ -97,11 +146,6 @@ def test_on_slurmctld_connected(mock_charm, mock_ociconfig, leader) -> None:
     )
 
     integration = state.get_relation(oci_runtime_integration_id)
-    if leader:
-        # Verify that the leader unit has set `oci.conf` data after `slurmctld` is connected.
-        assert "ociconfig" in integration.local_app_data
-        config = OCIConfig.from_json(integration.local_app_data["ociconfig"])
-        assert config.dict() == mock_ociconfig.dict()
-    else:
-        # Verify that non-leader has not set any `oci.conf` configuration data.
-        assert integration.local_app_data == {}
+    assert integration.local_app_data == expected_app_data
+    assert state.unit_status == expected_status
+    assert len(state.deferred) == expected_deferred
