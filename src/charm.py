@@ -64,7 +64,7 @@ class ApptainerCharm(ops.CharmBase):
             logger.error(e.message)
             event.defer()
             raise StopCharm(
-                ops.BlockedStatus("Failed to install Apptainer. See `juju debug-log` for details.")
+                ops.BlockedStatus("Failed to install Apptainer. See `juju debug-log` for details")
             )
 
         self.unit.status = ops.ActiveStatus()
@@ -79,7 +79,7 @@ class ApptainerCharm(ops.CharmBase):
         except AptError as e:
             logger.error(e.message)
             raise StopCharm(
-                ops.BlockedStatus("Failed to remove Apptainer. See `juju debug-log` for details.")
+                ops.BlockedStatus("Failed to remove Apptainer. See `juju debug-log` for details")
             )
 
     @leader

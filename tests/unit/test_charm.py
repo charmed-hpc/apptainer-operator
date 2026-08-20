@@ -31,7 +31,7 @@ from constants import OCI_RUNTIME_INTEGRATION_NAME
         pytest.param(None, ops.ActiveStatus(), id="success"),
         pytest.param(
             AptError("install failed"),
-            ops.BlockedStatus("Failed to install Apptainer. See `juju debug-log` for details."),
+            ops.BlockedStatus("Failed to install Apptainer. See `juju debug-log` for details"),
             id="fail",
         ),
     ),
@@ -60,7 +60,7 @@ def test_on_install(mock_charm, mocker: MockerFixture, mock_install, expected) -
         pytest.param(None, ops.BlockedStatus("Apptainer is not installed"), id="success"),
         pytest.param(
             AptError("remove failed"),
-            ops.BlockedStatus("Failed to remove Apptainer. See `juju debug-log` for details."),
+            ops.BlockedStatus("Failed to remove Apptainer. See `juju debug-log` for details"),
             id="fail",
         ),
     ),
