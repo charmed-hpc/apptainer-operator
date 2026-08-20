@@ -64,9 +64,6 @@ integration *args: lock
     #!/usr/bin/env bash
     set -euxo pipefail
 
-    charmcraft -v pack
-    mv apptainer_*.charm apptainer.charm
-    export LOCAL_APPTAINER={{project_dir / "apptainer.charm"}}
     {{uv_run}} pytest \
         -v \
         --tb native \
