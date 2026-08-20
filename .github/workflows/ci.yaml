@@ -1,4 +1,4 @@
-# Copyright 2025 Canonical Ltd.
+# Copyright 2025-2026 Canonical Ltd.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -119,4 +119,4 @@ jobs:
           lxd-channel: 5.21/stable
           juju-channel: 3.6/edge
       - name: Run integration tests
-        run: just integration --base ubuntu@26.04
+        run: just integration
