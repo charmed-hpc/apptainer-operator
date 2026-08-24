@@ -104,7 +104,7 @@ clean:
     rm -f {{project_dir / "apptainer_"}}*.charm
 
 # Apply static checks
-check: fmt lint typecheck
+check: lint typecheck
 
 # Regenerate uv.lock
 lock:
